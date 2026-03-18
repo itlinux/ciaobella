@@ -223,6 +223,6 @@ k port-forward pods/ciao-demo 8811:8080 -n ciao --address=0.0.0.0
 
 NOTE: I have enabled port-forward but that is not in the RBAC is not include
 
-== Testing Permissions
+== 9. Testing Permissions
 To verify permissions do k get pod -n default
 
