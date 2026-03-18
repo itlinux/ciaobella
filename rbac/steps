@@ -55,6 +55,8 @@ rules:
   - pods
   - pods/log
   - services
+  - pods/exec
+  - pods/attach
   verbs:
   - get
   - watch
@@ -75,6 +77,7 @@ rules:
   - update
   - patch
 EOF
+NOTE: if you want to do port-forward you will need to add that to the resources pods/portforward
 
 # RoleBinding for the user
 k apply -f - <<EOF
@@ -117,3 +120,6 @@ k --kubeconfig=kubeconfig-max.yml get pods -n ciao
 #simple swap into your .bashrc
 #alias kmax='export KUBECONFIG=~/ciaobella/rbac/kubeconfig-max.yml'
 #alias kadmin='export KUBECONFIG=~/.kube/config'
+#
+#run a quick image with message
+k run ciao-demo --image=cloudogu/hello-k8s --env="MESSAGE=Ciao"
