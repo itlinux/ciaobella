@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: remo-argocd-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: remo-argocd-app
+  template:
+    metadata:
+      labels:
+        app: remo-argocd-app
+    spec:
+      containers:
+        - name: remo-argocd-app
+          image: itlinux/remo-argocd-app:latest
+          ports:
+            - containerPort: 8880

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: remo-argocd-app
+spec:
+  selector:
+    app: remo-argocd-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8880
+  type: ClusterIP
