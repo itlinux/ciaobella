@@ -39,7 +39,7 @@ Set the CSR payload and create the CertificateSigningRequest:
 ----
 CSR=$(cat max.csr | base64 | tr -d '\n')
 
-kubectl apply -f - <<EOF
+k apply -f - <<EOF
 apiVersion: certificates.k8s.io/v1
 kind: CertificateSigningRequest
 metadata:
@@ -59,21 +59,21 @@ List CSRs:
 
 [source,bash]
 ----
-kubectl get csr
+k get csr
 ----
 
 Approve the CSR (required before the cert is issued):
 
 [source,bash]
 ----
-kubectl certificate approve max
+k certificate approve max
 ----
 
 == 3. Extract the issued certificate
 
 [source,bash]
 ----
-kubectl get csr max -o jsonpath='{.status.certificate}' | base64 --decode > max.crt
+k get csr max -o jsonpath='{.status.certificate}' | base64 --decode > max.crt
 ----
 
 == 4. Get values for kubeconfig
@@ -92,7 +92,7 @@ Create a Role in namespace `ciao` (adjust namespace and rules as needed):
 
 [source,bash]
 ----
-kubectl apply -f - <<EOF
+k apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -134,7 +134,7 @@ Create a RoleBinding for user `max`:
 
 [source,bash]
 ----
-kubectl apply -f - <<EOF
+k apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -158,7 +158,7 @@ Set the API server address (replace with your cluster IP/host and port):
 [source,bash]
 ----
 IP=192.168.1.100:6443
-kubectl config set-cluster kubernetes \
+k config set-cluster kubernetes \
   --certificate-authority=/etc/kubernetes/pki/ca.crt \
   --embed-certs=true \
   --server=https://$IP \
@@ -167,7 +167,7 @@ kubectl config set-cluster kubernetes \
 
 [source,bash]
 ----
-kubectl config set-credentials max \
+k config set-credentials max \
   --client-certificate=max.crt \
   --client-key=max.pem \
   --embed-certs=true \
@@ -179,14 +179,14 @@ Use the new kubeconfig:
 [source,bash]
 ----
 export KUBECONFIG=kubeconfig-max.yml
-kubectl get pods -n ciao
+k get pods -n ciao
 ----
 
 Or without changing the environment:
 
 [source,bash]
 ----
-kubectl --kubeconfig=kubeconfig-max.yml get pods -n ciao
+k --kubeconfig=kubeconfig-max.yml get pods -n ciao
 ----
 
 == 7. Optional: shell aliases
@@ -205,5 +205,24 @@ Run a demo pod in the default namespace:
 
 [source,bash]
 ----
-kubectl run ciao-demo --image=cloudogu/hello-k8s --env="MESSAGE=Ciao"
+k run ciao-demo --image=cloudogu/hello-k8s --env="MESSAGE=Ciao"
 ----
+
+
+[source,bash]
+----
+k run prova --image=curlimages/curl --restart=Never -n ciao   -- curl -m 5 http://10.100.196.45:8080
+----
+
+NOTE: The IP is from your svc. 
+
+[source,bash]
+----
+k port-forward pods/ciao-demo 8811:8080 -n ciao --address=0.0.0.0
+----
+
+NOTE: I have enabled port-forward but that is not in the RBAC is not include
+
+== Testing Permissions
+To verify permissions do k get pod -n default
+
