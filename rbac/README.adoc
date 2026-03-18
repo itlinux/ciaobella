@@ -1,0 +1,209 @@
+= Creating a Kubernetes User with RBAC and Custom Kubeconfig
+
+Based on the step-by-step guide: https://medium.com/@sauravkarki102/creating-a-kubernetes-user-with-rbac-and-custom-kubeconfig-step-by-step-guide-2eb3653c0fe9[Creating a Kubernetes user with RBAC and custom kubeconfig]. A few tweaks were needed to make it work.
+
+== Prerequisites
+
+* Access to a Kubernetes cluster (e.g. control-plane node for `ca.crt` and API server address)
+* `kubectl` (or alias `k`) configured with cluster-admin for CSR approval and RBAC setup
+* `openssl` and `base64` available locally
+
+== 1. Generate key and CSR
+
+Generate a private key:
+
+[source,bash]
+----
+openssl genrsa -out max.pem 2048
+----
+
+Create a certificate signing request (replace `max` and `ciao` with your user and group):
+
+[source,bash]
+----
+openssl req -new -key max.pem -out max.csr -subj "/CN=max/O=ciao"
+----
+
+Kubernetes expects the CSR in base64. Get the value for the next step:
+
+[source,bash]
+----
+cat max.csr | base64 | tr -d "\n" && echo
+----
+
+== 2. Create and approve CSR in Kubernetes
+
+Set the CSR payload and create the CertificateSigningRequest:
+
+[source,bash]
+----
+CSR=$(cat max.csr | base64 | tr -d '\n')
+
+kubectl apply -f - <<EOF
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: max
+spec:
+  request: $CSR
+  signerName: kubernetes.io/kube-apiserver-client
+  expirationSeconds: 86400
+  usages:
+  - digital signature
+  - key encipherment
+  - client auth
+EOF
+----
+
+List CSRs:
+
+[source,bash]
+----
+kubectl get csr
+----
+
+Approve the CSR (required before the cert is issued):
+
+[source,bash]
+----
+kubectl certificate approve max
+----
+
+== 3. Extract the issued certificate
+
+[source,bash]
+----
+kubectl get csr max -o jsonpath='{.status.certificate}' | base64 --decode > max.crt
+----
+
+== 4. Get values for kubeconfig
+
+Encode cert and key for use in kubeconfig (e.g. `client-certificate-data` and `client-key-data`):
+
+[source,bash]
+----
+cat max.crt | base64 | tr -d "\n" && echo  # output -> client-certificate-data
+cat max.pem | base64 | tr -d "\n" && echo  # output -> client-key-data
+----
+
+== 5. Role and RoleBinding
+
+Create a Role in namespace `ciao` (adjust namespace and rules as needed):
+
+[source,bash]
+----
+kubectl apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: ciao
+  name: max-prod-role
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  - pods/log
+  - services
+  - pods/exec
+  - pods/attach
+  verbs:
+  - get
+  - watch
+  - list
+  - create
+  - delete
+  - update
+  - patch
+- apiGroups: ["apps"]
+  resources:
+  - deployments
+  verbs:
+  - get
+  - watch
+  - list
+  - create
+  - delete
+  - update
+  - patch
+EOF
+----
+
+NOTE: For port-forward, add `pods/portforward` to the `resources` list in the Role.
+
+Create a RoleBinding for user `max`:
+
+[source,bash]
+----
+kubectl apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: max-prod-rolebinding
+  namespace: ciao
+subjects:
+- kind: User
+  name: max
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: max-prod-role
+  apiGroup: rbac.authorization.k8s.io
+EOF
+----
+
+== 6. Build custom kubeconfig
+
+Set the API server address (replace with your cluster IP/host and port):
+
+[source,bash]
+----
+IP=192.168.1.100:6443
+kubectl config set-cluster kubernetes \
+  --certificate-authority=/etc/kubernetes/pki/ca.crt \
+  --embed-certs=true \
+  --server=https://$IP \
+  --kubeconfig=kubeconfig-max.yml
+----
+
+[source,bash]
+----
+kubectl config set-credentials max \
+  --client-certificate=max.crt \
+  --client-key=max.pem \
+  --embed-certs=true \
+  --kubeconfig=kubeconfig-max.yml
+----
+
+Use the new kubeconfig:
+
+[source,bash]
+----
+export KUBECONFIG=kubeconfig-max.yml
+kubectl get pods -n ciao
+----
+
+Or without changing the environment:
+
+[source,bash]
+----
+kubectl --kubeconfig=kubeconfig-max.yml get pods -n ciao
+----
+
+== 7. Optional: shell aliases
+
+Add to your `.bashrc` (or equivalent) for quick switching:
+
+[source,bash]
+----
+alias kmax='export KUBECONFIG=~/ciaobella/rbac/kubeconfig-max.yml'
+alias kadmin='export KUBECONFIG=~/.kube/config'
+----
+
+== 8. Quick test pod
+
+Run a demo pod in the default namespace:
+
+[source,bash]
+----
+kubectl run ciao-demo --image=cloudogu/hello-k8s --env="MESSAGE=Ciao"
+----
