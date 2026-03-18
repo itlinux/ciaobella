@@ -224,5 +224,9 @@ k port-forward pods/ciao-demo 8811:8080 -n ciao --address=0.0.0.0
 NOTE: I have enabled port-forward but that is not in the RBAC is not include
 
 == 9. Testing Permissions
-To verify permissions do k get pod -n default
+To verify permissions do: 
 
+----
+# Should be Forbidden - confirms RBAC is scoped correctly
+k --kubeconfig=kubeconfig-max.yml get pod -n default
+----
