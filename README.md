@@ -1,18 +1,38 @@
-ciaobella
+# ciaobella 🇮🇹
+
+A simple Python Flask application deployed on Kubernetes via ArgoCD. Built as a hands-on demo for GitOps workflows, multi-arch container builds, and Kubernetes RBAC.
+
+## Overview
+
+`ciaobella` is a minimal Flask web app that returns a greeting, containerized and deployed to a kubeadm-based Kubernetes cluster. It demonstrates a full GitOps pipeline using ArgoCD with manifests managed in this repo.
 
 
 
+### 1. Build and push the image (multi-arch)
 
-# Image Issue
-Since I built this on my Mac, I did not gen the right arch image :( but then with the k describe command it shows
-`x/remo-argocd-app:latest": no match for platform in manifest: not found`
+```bash
+docker buildx create --use --name multiarch-remo-argo
+docker buildx inspect --bootstrap
 
-I then rebuilt it with buildx 
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t itlinux/remo-argocd-app:latest \
+  --push .
+```
 
-it will then show 
+> **Note:** Multi-arch build is required to support both Apple Silicon (arm64) dev machines and amd64 Kubernetes nodes.
 
----
-99fc282d8bf5 linux/amd64 less than 1 day 48.74 MB
+### 2. Deploy via ArgoCD
+I used the UI to import it you can use the cli if you want. 
 
-3e1c0e8de1a2 linux/arm64 less than 1 day 49.02 MB
----
+
+## Troubleshooting
+
+**ImagePullBackOff** — If pods fail to pull the image, ensure the image was built for the correct platform (`linux/amd64` for standard cluster nodes):
+
+
+**Expired Certificates** — kubeadm issues 1-year certs. Renew with:
+
+```bash
+sudo kubeadm certs renew all
+sudo systemctl restart kubelet
+sudo cp /etc/kubernetes/admin.conf ~/.kube/config
