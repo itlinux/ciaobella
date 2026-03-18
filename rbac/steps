@@ -1,0 +1,117 @@
+# https://medium.com/@sauravkarki102/creating-a-kubernetes-user-with-rbac-and-custom-kubeconfig-step-by-step-guide-2eb3653c0fe9
+
+# Gen
+openssl genrsa -out max.pem 2048
+
+# Sign
+openssl req -new -key max.pem -out max.csr -subj "/CN=max/O=ciao"
+
+# Kubernetes requires the CSR in base64 format:
+cat max.csr | base64 | tr -d "\n" && echo
+
+# CSR
+CSR=$(cat max.csr | base64 | tr -d '\n')
+
+k apply -f - <<EOF
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: max
+spec:
+  request: $CSR
+  signerName: kubernetes.io/kube-apiserver-client
+  expirationSeconds: 86400
+  usages:
+  - digital signature
+  - key encipherment
+  - client auth
+EOF
+
+# check csr
+k get csr
+
+# must approve it before it works
+k certificate approve max
+
+# extract the issued cert
+k get csr max -o jsonpath='{.status.certificate}' | base64 --decode > max.crt
+
+# Create a Custom Kubeconfig for the User
+cat max.crt | base64 | tr -d "\n" && echo  # output goes to <client-certificate-data>
+cat max.pem | base64 | tr -d "\n" && echo  # output goes to <client-key-data>
+
+# Role and RoleBinding
+k apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: ciao
+  name: max-prod-role
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  - pods/log
+  - services
+  verbs:
+  - get
+  - watch
+  - list
+  - create
+  - delete
+  - update
+  - patch
+- apiGroups: ["apps"]
+  resources:
+  - deployments
+  verbs:
+  - get
+  - watch
+  - list
+  - create
+  - delete
+  - update
+  - patch
+EOF
+
+# RoleBinding for the user
+k apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: max-prod-rolebinding
+  namespace: ciao
+subjects:
+- kind: User
+  name: max
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: max-prod-role
+  apiGroup: rbac.authorization.k8s.io
+EOF
+
+# Build kubeconfig
+IP=192.168.1.100:6443
+kubectl config set-cluster kubernetes \
+  --certificate-authority=/etc/kubernetes/pki/ca.crt \
+  --embed-certs=true \
+  --server=https://$IP \
+  --kubeconfig=kubeconfig-max.yml
+
+kubectl config set-credentials max \
+  --client-certificate=max.crt \
+  --client-key=max.pem \
+  --embed-certs=true \
+  --kubeconfig=kubeconfig-max.yml
+
+# export KUBECONFIG=kubeconfig-max.yml
+# k get pods -n ciao
+
+# or on the fly
+k --kubeconfig=kubeconfig-max.yml get pods -n ciao
+
+
+#simple swap into your .bashrc
+#alias kmax='export KUBECONFIG=~/ciaobella/rbac/kubeconfig-max.yml'
+#alias kadmin='export KUBECONFIG=~/.kube/config'
