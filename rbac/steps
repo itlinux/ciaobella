@@ -1,5 +1,7 @@
 # https://medium.com/@sauravkarki102/creating-a-kubernetes-user-with-rbac-and-custom-kubeconfig-step-by-step-guide-2eb3653c0fe9
-
+# the ref above but I needed to tewak a few things to make it work :) 
+#
+#
 # Gen
 openssl genrsa -out max.pem 2048
 
