@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: remo-argocd-app
-          image: itlinux/remo-argocd-app:latest
+          image: itlinux/remo-argocd-app
           ports:
             - containerPort: 8880
