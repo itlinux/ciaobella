@@ -90,6 +90,9 @@ cat max.pem | base64 | tr -d "\n" && echo  # output -> client-key-data
 
 Create a Role in namespace `ciao` (adjust namespace and rules as needed):
 
+----
+k create ns ciao
+----
 [source,bash]
 ----
 k apply -f - <<EOF
@@ -153,10 +156,6 @@ EOF
 
 == 6. Build custom kubeconfig
 Add namespace for user max which is using ciao
-
-----
-k create ns ciao
-----
 
 Set the API server address (replace with your cluster IP/host and port):
 
