@@ -36,11 +36,13 @@ I used the UI to import it you can use the cli if you want.
 sudo kubeadm certs renew all
 sudo systemctl restart kubelet
 sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+```
 
-### Patching ref cool site
+### 2. Patching ref cool site
 
 https://bargenqua.st/posts/kubectl-patching/
 
 
-### Best YAML ID for K8s
+### 3. Best YAML ID for K8s
 https://monokle.io
+
