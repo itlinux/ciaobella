@@ -188,6 +188,13 @@ k config set-context max-context \
   --kubeconfig=kubeconfig-max.yml
 ----
 
+NOTE: the content switch is important 
+
+[source,bash]
+----
+k config --kubeconfig=kubeconfig-max.yml use-context max-context
+----
+
 Use the new kubeconfig:
 
 [source,bash]
