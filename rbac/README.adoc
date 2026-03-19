@@ -152,6 +152,11 @@ EOF
 ----
 
 == 6. Build custom kubeconfig
+Add namespace for user max which is using ciao
+
+----
+k create ns ciao
+----
 
 Set the API server address (replace with your cluster IP/host and port):
 
@@ -171,6 +176,15 @@ k config set-credentials max \
   --client-certificate=max.crt \
   --client-key=max.pem \
   --embed-certs=true \
+  --kubeconfig=kubeconfig-max.yml
+----
+
+[source,bash]
+----
+k config set-context max-context \
+  --cluster=kubernetes \
+  --namespace=ciao \
+  --user=max \
   --kubeconfig=kubeconfig-max.yml
 ----
 
