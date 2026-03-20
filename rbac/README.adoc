@@ -250,3 +250,31 @@ To verify permissions do:
 # Should be Forbidden - confirms RBAC is scoped correctly
 k --kubeconfig=kubeconfig-max.yml get pod -n default
 ----
+
+
+
+== Single KUBECONFIG
+You can add the kubeconfig just generated into the main and then use content-switch and use the set-content
+
+do cat to the kubeconfig just generated and copy the fowlling content into the original config under the content section.  
+
+----
+- context:
+    cluster: kubernetes
+    namespace: ciao
+    user: max
+  name: max
+----
+
+And then add the user at the bottom of the original config file. For simplicity I removed the certs and keys 
+
+----
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data:
+    client-key-data: 
+- name: max
+  user:
+    client-certificate-data: 
+    client-key-data: 
