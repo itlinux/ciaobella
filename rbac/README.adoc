@@ -47,7 +47,7 @@ metadata:
 spec:
   request: $CSR
   signerName: kubernetes.io/kube-apiserver-client
-  expirationSeconds: 386400
+  expirationSeconds: 31536000
   usages:
   - digital signature
   - key encipherment
@@ -93,6 +93,7 @@ Create a Role in namespace `ciao` (adjust namespace and rules as needed):
 ----
 k create ns ciao
 ----
+
 [source,bash]
 ----
 k apply -f - <<EOF
@@ -107,8 +108,11 @@ rules:
   - pods
   - pods/log
   - services
+  - secrets
+  - configmaps
   - pods/exec
   - pods/attach
+  - pods/portforward
   verbs:
   - get
   - watch
@@ -128,10 +132,22 @@ rules:
   - delete
   - update
   - patch
+- apiGroups: ["cert-manager.io"]
+  resources:
+  - issuers
+  - certificates
+  verbs:
+  - get
+  - watch
+  - list
+  - create
+  - update
+  - patch
+  - delete
 EOF
 ----
 
-NOTE: For port-forward, add `pods/portforward` to the `resources` list in the Role.
+NOTE: `pods/portforward`, `secrets`, and `configmaps` are included in the role above.
 
 Create a RoleBinding for user `max`:
 
@@ -154,7 +170,8 @@ roleRef:
 EOF
 ----
 
-Role for Monitoring 
+Role for Monitoring
+
 [source,bash]
 ----
 k apply -f - <<EOF
@@ -189,12 +206,22 @@ rules:
   - get
   - list
   - watch
+- apiGroups: ["cert-manager.io"]
+  resources:
+  - issuers
+  - certificates
+  verbs:
+  - get
+  - list
+  - watch
 EOF
 ----
 
-Binding the Role for Monitoring to Max 
+Binding the Role for Monitoring to Max
 
+[source,bash]
 ----
+k apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -206,18 +233,20 @@ roleRef:
   name: max-prod-monitor
 subjects:
 - kind: User
-  name: max # or your group / user / serviceaccount
+  name: max
   apiGroup: rbac.authorization.k8s.io
+EOF
 ----
 
 == 6. Build custom kubeconfig
+
 Add namespace for user max which is using ciao
 
-Set the API server address (replace with your cluster IP/host and port):
+Set the API server address:
 
 [source,bash]
 ----
-IP=192.168.1.100:6443
+IP=$(ip a show eth1 |grep inet|grep -v inet6|awk -F " " '{print $2}'|cut -d "/" -f1):6443
 k config set-cluster kubernetes \
   --certificate-authority=/etc/kubernetes/pki/ca.crt \
   --embed-certs=true \
@@ -243,7 +272,7 @@ k config set-context max-context \
   --kubeconfig=kubeconfig-max.yml
 ----
 
-NOTE: the content switch is important 
+NOTE: The context switch is important.
 
 [source,bash]
 ----
@@ -275,62 +304,88 @@ alias kmax='export KUBECONFIG=~/ciaobella/rbac/kubeconfig-max.yml'
 alias kadmin='export KUBECONFIG=~/.kube/config'
 ----
 
+NOTE: These aliases swap the entire KUBECONFIG file. For a cleaner workflow, merge both configs and use `k config use-context` instead. See the Single KUBECONFIG section below.
+
 == 8. Quick test pod
 
-Run a demo pod in the default namespace:
+Run a demo pod in the ciao namespace:
 
 [source,bash]
 ----
-k run ciao-demo --image=cloudogu/hello-k8s --env="MESSAGE=Ciao"
+k run ciao-demo --image=cloudogu/hello-k8s --env="MESSAGE=Ciao" -n ciao
 ----
-
 
 [source,bash]
 ----
-k run prova --image=curlimages/curl --restart=Never -n ciao   -- curl -m 5 http://10.100.196.45:8080
+k run prova --image=curlimages/curl --restart=Never -n ciao -- curl -m 5 http://10.100.196.45:8080
 ----
 
-NOTE: The IP is from your svc. 
+NOTE: The IP is from your svc.
 
 [source,bash]
 ----
 k port-forward pods/ciao-demo 8811:8080 -n ciao --address=0.0.0.0
 ----
 
-NOTE: I have enabled port-forward but that is not in the RBAC is not include
-
 == 9. Testing Permissions
-To verify permissions do: 
 
+To verify permissions do:
+
+[source,bash]
 ----
+k auth can-i get pods -n ciao --as=max
+k auth can-i get secrets -n ciao --as=max
+k auth can-i get configmaps -n ciao --as=max
+k auth can-i get issuers.cert-manager.io -n ciao --as=max
+k auth can-i port-forward pods -n ciao --as=max
 # Should be Forbidden - confirms RBAC is scoped correctly
 k --kubeconfig=kubeconfig-max.yml get pod -n default
 ----
 
-
-
 == Single KUBECONFIG
-You can add the kubeconfig just generated into the main and then use content-switch and use the set-content
 
-do cat to the kubeconfig just generated and copy the fowlling content into the original config under the content section.  
+You can merge both kubeconfigs so you can switch contexts without swapping files:
+
+[source,bash]
+----
+KUBECONFIG=~/.kube/config:~/ciaobella/rbac/kubeconfig-max.yml \
+  kubectl config view --flatten > /tmp/merged.yml
+mv /tmp/merged.yml ~/.kube/config
+----
+
+Then switch contexts with:
+
+[source,bash]
+----
+k config use-context max-context
+k config use-context kubernetes-admin@kubernetes
+----
+
+To add manually and harder way but  copy the following into the original config under the contexts section:
 
 ----
 - context:
     cluster: kubernetes
     namespace: ciao
     user: max
-  name: max
+  name: max-context
 ----
 
-And then add the user at the bottom of the original config file. For simplicity I removed the certs and keys 
+And then add the user at the bottom of the original config file:
 
 ----
 users:
 - name: kubernetes-admin
   user:
     client-certificate-data:
-    client-key-data: 
+    client-key-data:
 - name: max
   user:
-    client-certificate-data: 
-    client-key-data: 
+    client-certificate-data:
+    client-key-data:
+----
+
+Make it that it will not delete it 
+----
+k config set-context --current
+----

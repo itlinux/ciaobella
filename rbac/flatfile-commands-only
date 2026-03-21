@@ -45,8 +45,11 @@ rules:
   - pods
   - pods/log
   - services
+  - secrets
+  - configmaps
   - pods/exec
   - pods/attach
+  - pods/portforward
   verbs:
   - get
   - watch
@@ -66,6 +69,18 @@ rules:
   - delete
   - update
   - patch
+- apiGroups: ["cert-manager.io"]
+  resources:
+  - issuers
+  - certificates
+  verbs:
+  - get
+  - watch
+  - list
+  - create
+  - update
+  - patch
+  - delete
 EOF
 
 k apply -f - <<EOF
