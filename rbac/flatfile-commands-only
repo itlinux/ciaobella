@@ -84,6 +84,59 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 EOF
 
+
+k apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: ciao
+  name: max-prod-monitor
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  - pods/log
+  - services
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["apps"]
+  resources:
+  - deployments
+  - replicasets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["networking.k8s.io"]
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+EOF
+
+k apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: max-prod-monitor-binding
+  namespace: ciao
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: max-prod-monitor
+subjects:
+- kind: User
+  name: max # or your group / user / serviceaccount
+  apiGroup: rbac.authorization.k8s.io
+EOF
+
+
+
 IP=192.168.1.100:6443
 k config set-cluster kubernetes \
   --certificate-authority=/etc/kubernetes/pki/ca.crt \
