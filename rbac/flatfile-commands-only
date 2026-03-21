@@ -132,6 +132,14 @@ rules:
   - get
   - list
   - watch
+- apiGroups: ["cert-manager.io"]
+  resources:
+  - issuers
+  - certificates
+  verbs:
+  - get
+  - list
+  - watch
 EOF
 
 k apply -f - <<EOF
