@@ -5,7 +5,13 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello():
-    return "Ciao Remo + Kubernetes!"
+    return """
+    <html>
+        <body style="background-color:#121212; color:#ffffff; font-family:Arial;">
+            <h1><center>Ciao Remo + Kubernetes! 🚀 </center></h1>
+        </body>
+    </html>
+    """
 
 
 if __name__ == "__main__":
