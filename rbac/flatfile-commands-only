@@ -1,10 +1,6 @@
 openssl genrsa -out max.pem 2048
-
 openssl req -new -key max.pem -out max.csr -subj "/CN=max/O=ciao"
-
 cat max.csr | base64 | tr -d "\n" && echo
-
-
 CSR=$(cat max.csr | base64 | tr -d '\n')
 
 k apply -f - <<EOF
@@ -15,24 +11,17 @@ metadata:
 spec:
   request: $CSR
   signerName: kubernetes.io/kube-apiserver-client
-  expirationSeconds: 86400
+  expirationSeconds: 31536000
   usages:
   - digital signature
   - key encipherment
   - client auth
 EOF
-
 k get csr
-
 k certificate approve max
-
 k get csr max -o jsonpath='{.status.certificate}' | base64 --decode > max.crt
-
 cat max.crt | base64 | tr -d "\n" && echo  # output -> client-certificate-data
 cat max.pem | base64 | tr -d "\n" && echo  # output -> client-key-data
-
-k create ns ciao
-
 k apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -82,7 +71,6 @@ rules:
   - patch
   - delete
 EOF
-
 k apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -98,8 +86,6 @@ roleRef:
   name: max-prod-role
   apiGroup: rbac.authorization.k8s.io
 EOF
-
-
 k apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -141,7 +127,6 @@ rules:
   - list
   - watch
 EOF
-
 k apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -154,35 +139,25 @@ roleRef:
   name: max-prod-monitor
 subjects:
 - kind: User
-  name: max # or your group / user / serviceaccount
+  name: max
   apiGroup: rbac.authorization.k8s.io
 EOF
-
-
-
-IP=192.168.1.100:6443
+IP=$(ip a show eth1 |grep inet|grep -v inet6|awk -F " " '{print $2}'|cut -d "/" -f1):6443
 k config set-cluster kubernetes \
   --certificate-authority=/etc/kubernetes/pki/ca.crt \
   --embed-certs=true \
   --server=https://$IP \
   --kubeconfig=kubeconfig-max.yml
-
 k config set-credentials max \
   --client-certificate=max.crt \
   --client-key=max.pem \
   --embed-certs=true \
   --kubeconfig=kubeconfig-max.yml
-
 k config set-context max-context \
   --cluster=kubernetes \
   --namespace=ciao \
   --user=max \
   --kubeconfig=kubeconfig-max.yml
-
 k config --kubeconfig=kubeconfig-max.yml use-context max-context
-
 export KUBECONFIG=kubeconfig-max.yml
 k get pods -n ciao
-
-
-
