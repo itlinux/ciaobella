@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ciaobella
+spec:
+  selector:
+    app: ciaobella
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8880
+  type: LoadBalancer

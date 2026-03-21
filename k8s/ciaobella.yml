@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ciaobella
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ciaobella
+  template:
+    metadata:
+      labels:
+        app: ciaobella
+    spec:
+      containers:
+        - name: ciaobella
+          image: itlinux/ciaobella
+          ports:
+            - containerPort: 8880
