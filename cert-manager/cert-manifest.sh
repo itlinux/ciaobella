@@ -1,7 +1,8 @@
 # Installing cert-manager
-k apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+# moved into the built
+#k apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
 
-sleep 120
+#sleep 120
 
 k apply -f - <<EOF
 apiVersion: v1
