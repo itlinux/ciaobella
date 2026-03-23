@@ -3,6 +3,7 @@
 #k apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
 
 #sleep 120
+alias k=kubectl
 
 k apply -f - <<EOF
 apiVersion: v1
