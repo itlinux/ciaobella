@@ -1,3 +1,4 @@
+k apply -f - <<EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,3 +18,4 @@ spec:
           image: itlinux/ciaobella
           ports:
             - containerPort: 8880
+EOF
