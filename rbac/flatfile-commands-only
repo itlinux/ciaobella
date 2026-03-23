@@ -1,3 +1,5 @@
+alias k=kubectl
+
 k create ns ciao 
 openssl genrsa -out max.pem 2048
 openssl req -new -key max.pem -out max.csr -subj "/CN=max/O=ciao"
