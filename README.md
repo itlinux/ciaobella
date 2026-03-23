@@ -6,7 +6,7 @@ A simple Python Flask application deployed on Kubernetes via ArgoCD. Built as a 
 
 `ciaobella` is a minimal Flask web app that returns a greeting, containerized and deployed to a kubeadm-based Kubernetes cluster. A GitHub Actions workflow builds and pushes the multi-arch Docker image on each push to `main`. It demonstrates a full GitOps pipeline using ArgoCD with manifests managed in this repo.
 
-### 1. Build and push the image (multi-arch)
+### 1. Build and push the image (multi-arch) manually
 
 ```bash
 docker buildx create --use --name multiarch-remo-argo
