@@ -1,3 +1,5 @@
+alias k=kubectl
+
 k apply -f - <<EOF
 ---
 # Issuer for ciao namespace
