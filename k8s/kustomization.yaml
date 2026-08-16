@@ -13,4 +13,4 @@ resources:
 images:
 - name: itlinux/ciaobella
   newName: itlinux/ciaobella
-  newTag: 876d6b403ecfd2046926943387327130e415cfbd
+  newTag: 8c64d30481181830092f91a959271fb5193a2f73
