@@ -2,14 +2,15 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ciaobella.yml
-  - ciaobella-svc.yml
-  - deployment.yml
-  - service.yml
+- ciaobella.yml
+- ciaobella-svc.yml
+- deployment.yml
+- service.yml
 
 # The CI workflow rewrites newTag to the commit SHA on every push to main and
 # commits the change back. That commit is what ArgoCD syncs on -- the image tag
 # has to change in git, or ArgoCD sees no diff and never restarts the pod.
 images:
-  - name: itlinux/ciaobella
-    newTag: latest
+- name: itlinux/ciaobella
+  newName: itlinux/ciaobella
+  newTag: 9955d0fb392dd19df47424326b4ff087aa6372fe
