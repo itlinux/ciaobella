@@ -4,10 +4,16 @@ on:
   push:
     branches:
       - main
+    # The pin-image step below commits back to k8s/. Ignoring that path stops
+    # the bot commit from retriggering this workflow.
+    paths-ignore:
+      - 'k8s/**'
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -34,3 +40,16 @@ jobs:
           tags: |
             itlinux/ciaobella:latest
             itlinux/ciaobella:${{ github.sha }}
+
+      - name: Pin image tag in manifests
+        run: |
+          curl -sL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz | tar xz
+          cd k8s
+          ../kustomize edit set image itlinux/ciaobella=itlinux/ciaobella:${{ github.sha }}
+          cd ..
+          rm -f kustomize
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add k8s/kustomization.yaml
+          git commit -m "ci: pin ciaobella image to ${{ github.sha }}" || exit 0
+          git push

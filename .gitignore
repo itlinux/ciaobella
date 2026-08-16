@@ -1,0 +1,17 @@
+# AI assistant / editor local files
+.claude/
+.codex/
+.cursor/
+.aider*
+.github/copilot-instructions.md
+.vscode/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+
+# secrets
+token
+*.token
+.env
+.trunk/
+.gitnexus/
