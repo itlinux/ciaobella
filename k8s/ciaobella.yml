@@ -14,6 +14,7 @@ spec:
     spec:
       containers:
         - name: ciaobella
-          image: itlinux/ciaobella
+          image: itlinux/ciaobella:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8880
