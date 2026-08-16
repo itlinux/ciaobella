@@ -8,7 +8,7 @@ def hello():
     return """
     <html>
         <body style="background-color:#121212; color:#ffffff; font-family:Arial;">
-            <h1><center>Ciao Remo + Kubernetes! 🚀  Bella!</center></h1>
+            <h1><center>Ciao Remo + Kubernetes! 🚀  Bella! CF-Argo</center></h1>
         </body>
     </html>
     """
